@@ -1,10 +1,16 @@
 # Zotero WebDAV for Kubernetes
 
+This guide explains how to deploy a self-hosted Zotero WebDAV server on a K3s cluster.
+
 ## Install K3s
+
+Run the following command to install K3s:
 
 ```sh
 curl -sfL https://get.k3s.io | sh -
 ```
+
+Configure access to the cluster:
 
 ```sh
 mkdir -p ~/.kube
@@ -13,54 +19,87 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 chmod 600 ~/.kube/config
 ```
 
-### (Option) Setup Local Registry:
+### (Option) Setup Local Docker Registry:
+
+To speed up local development and avoid pushing images to external registries, set up a local registry mirror:
 
 ```sh
 sudo tee /etc/rancher/k3s/registries.yaml > /dev/null <<EOF
 mirrors:
-  "REGISTRY:5000":
+  "REGISTRY":
     endpoint:
-    - "http://REGISTRY:5000"
+    - "http://REGISTRY"
 EOF
 ```
+
+> Replace `REGISTRY` with your registry address (e.g. `localhost:5000`).
+
+Restart K3s to apply the config:
 
 ```sh
 sudo systemctl restart k3s
 ```
 
-## Build OCI Image
+## Build and Push WebDAV Image
+
+Build the Docker image for the WebDAV server:
 
 ```sh
 docker build -t zotero-webdav .
 ```
 
-### (Option) Push to Local Registry
+(Option) If you're using a local registry:
 
 ```sh
-docker tag zotero-webdav REGISTRY:5000/zotero-webdav
+docker tag zotero-webdav REGISTRY/zotero-webdav
+docker push REGISTRY/zotero-webdav
 ```
 
-```sh
-docker push REGISTRY:5000/zotero-webdav
-```
-
-## Update Pod Image
-
-```
-kubectl rollout restart deployment -n zotero-webdav -l app.kubernetes.io/component=webdav
-```
+> Replace `REGISTRY` with your registry address.
 
 ## Setup Zotero WebDAV
+
+Create a namespace:
 
 ```sh
 kubectl create namespace zotero-webdav
 ```
 
-```sh
-USER=zotero PASSWORD=password envsubst < manifest.yaml.template | sudo kubectl apply -f -
+Edit `manifest.yaml.template`:
+
+```diff
+ spec:
+   containers:
+   - name: zotero-webdav
++    image: zotero-webdav
+-    image: REGISTRY/zotero-webdav
+     ports:
+     - containerPort: 8080
 ```
 
-## Setup Zotero WebDAV Ingress:
+> Replace `REGISTRY` with your registry address.
+
+Deploy:
+
+```sh
+USER=zotero PASSWORD=password envsubst < manifest.yaml.template | kubectl apply -f -
+```
+
+> Replace `USER` and `PASSWORD` with your username and password.
+
+Check deployment status:
+
+```sh
+kubectl get all -n zotero-webdav
+```
+
+If you rebuild or retag your Docker image, restart the deployment like this:
+
+```sh
+kubectl rollout restart deployment -n zotero-webdav -l app.kubernetes.io/component=webdav
+```
+
+## Configure Ingress:
 
 `ingress.yaml` Example:
 
@@ -87,6 +126,10 @@ spec:
             port:
               number: 8080
 ```
+
+> Fix `HOST` and `USER` with your domain and username.
+
+Apply the Ingress:
 
 ```sh
 kubectl apply -f ingress.yaml
