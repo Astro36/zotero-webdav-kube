@@ -1,8 +1,8 @@
 # Zotero WebDAV for Kubernetes
 
-This guide explains how to deploy a self-hosted Zotero WebDAV server on a K3s cluster.
+This guide explains how to deploy a self-hosted Zotero WebDAV server on a lightweight Kubernetes (K3s) cluster.
 
-## Install K3s
+## (Option) Install K3s
 
 Run the following command to install K3s:
 
@@ -19,7 +19,7 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 chmod 600 ~/.kube/config
 ```
 
-### (Option) Setup Local Docker Registry:
+### (Option) Setup Local Docker Registry
 
 To speed up local development and avoid pushing images to external registries, set up a local registry mirror:
 
@@ -99,7 +99,7 @@ If you rebuild or retag your Docker image, restart the deployment like this:
 kubectl rollout restart deployment -n zotero-webdav -l app.kubernetes.io/component=webdav
 ```
 
-## Configure Ingress:
+## Configure Ingress
 
 `ingress.yaml` Example:
 
