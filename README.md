@@ -1,4 +1,4 @@
-# Zotero WebDAV
+# Zotero WebDAV for Kubernetes
 
 ## Install K3s
 
