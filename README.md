@@ -126,7 +126,7 @@ spec:
               number: 8080
 ```
 
-> Fix `USER` with your domain and username.
+> Replace `USER` with username.
 
 Apply the Ingress:
 
