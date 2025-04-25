@@ -115,8 +115,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: HOST
-    http:
+  - http:
       paths:
       - path: /zotero-webdav/USER/zotero
         pathType: Prefix
@@ -127,7 +126,7 @@ spec:
               number: 8080
 ```
 
-> Fix `HOST` and `USER` with your domain and username.
+> Fix `USER` with your domain and username.
 
 Apply the Ingress:
 
