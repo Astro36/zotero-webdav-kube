@@ -1,8 +1,8 @@
 # Zotero WebDAV for Kubernetes
 
-This guide explains how to deploy a self-hosted Zotero WebDAV server on a lightweight Kubernetes (K3s) cluster.
+> Self-hosted WebDAV server for syncing Zotero attachments, deployed on a lightweight Kubernetes (K3s) cluster
 
-## (Option) Install K3s
+## 1. Install K3s
 
 Run the following command to install K3s:
 
@@ -19,28 +19,7 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 chmod 600 ~/.kube/config
 ```
 
-### (Option) Setup Local Docker Registry
-
-To speed up local development and avoid pushing images to external registries, set up a local registry mirror:
-
-```sh
-sudo tee /etc/rancher/k3s/registries.yaml > /dev/null <<EOF
-mirrors:
-  "REGISTRY":
-    endpoint:
-    - "http://REGISTRY"
-EOF
-```
-
-> Replace `REGISTRY` with your registry address (e.g. `localhost:5000`).
-
-Restart K3s to apply the config:
-
-```sh
-sudo systemctl restart k3s
-```
-
-## Build and Push WebDAV Image
+## 2. Build and Import the WebDAV Image
 
 Build the Docker image for the WebDAV server:
 
@@ -48,16 +27,16 @@ Build the Docker image for the WebDAV server:
 docker build -t zotero-webdav .
 ```
 
-(Option) If you're using a local registry:
+K3s uses its own containerd runtime and doesn't see images in Docker's local store.
+With no registry to pull from, export the image and import it into containerd directly:
 
 ```sh
-docker tag zotero-webdav REGISTRY/zotero-webdav
-docker push REGISTRY/zotero-webdav
+docker save zotero-webdav:latest -o zotero-webdav.tar
+sudo k3s ctr images import zotero-webdav.tar
+sudo k3s ctr images ls | grep zotero   # confirm it imported
 ```
 
-> Replace `REGISTRY` with your registry address.
-
-## Setup Zotero WebDAV
+## 3. Deploy Zotero WebDAV
 
 Create a namespace:
 
@@ -65,41 +44,35 @@ Create a namespace:
 kubectl create namespace zotero-webdav
 ```
 
-Edit `manifest.yaml.template`:
-
-```diff
- spec:
-   containers:
-   - name: zotero-webdav
-+    image: zotero-webdav
--    image: REGISTRY/zotero-webdav
-     ports:
-     - containerPort: 8080
-```
-
-> Replace `REGISTRY` with your registry address.
-
-Deploy:
+Fill the template's `USER`/`PASSWORD` placeholders with `envsubst` and apply the result.
+Use your own credentials here:
 
 ```sh
 USER=zotero PASSWORD=password envsubst < manifest.yaml.template | kubectl apply -f -
 ```
 
-> Replace `USER` and `PASSWORD` with your username and password.
-
-Check deployment status:
+Check that everything came up:
 
 ```sh
 kubectl get all -n zotero-webdav
 ```
 
-If you rebuild or retag your Docker image, restart the deployment like this:
+### Update the Deployment
+
+After rebuilding and re-importing the image (step 2), restart the deployment to roll out the new build:
 
 ```sh
 kubectl rollout restart deployment -n zotero-webdav -l app.kubernetes.io/component=webdav
 ```
 
-## Configure Ingress
+A restart leaves the previous ReplicaSet scaled to zero.
+Once you no longer need it for rollback, delete these empty ReplicaSets:
+
+```sh
+kubectl delete rs -n zotero-webdav $(kubectl get rs -n zotero-webdav -o jsonpath='{range .items[?(@.spec.replicas==0)]}{.metadata.name} {end}')
+```
+
+## 4. Configure Ingress
 
 `ingress.yaml` Example:
 
@@ -133,3 +106,8 @@ Apply the Ingress:
 ```sh
 kubectl apply -f ingress.yaml
 ```
+
+## 5. Connect from Zotero
+
+In Zotero, go to **Settings → Sync → File Syncing**, set attachment syncing to **WebDAV**, and enter the server URL (`http://<host>/zotero-webdav/<USER>/zotero`) with the credentials from step 3.
+Click **Verify Server** to test the connection.

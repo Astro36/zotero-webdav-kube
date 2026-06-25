@@ -41,7 +41,7 @@ spec:
       containers:
       - name: zotero-webdav
         image: docker.io/library/zotero-webdav:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Never 
         ports:
         - containerPort: 8080
         env:
