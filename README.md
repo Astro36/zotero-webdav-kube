@@ -38,17 +38,11 @@ sudo k3s ctr images ls | grep zotero   # confirm it imported
 
 ## 3. Deploy Zotero WebDAV
 
-Create a namespace:
-
-```sh
-kubectl create namespace zotero-webdav
-```
-
 Fill the template's `USER`/`PASSWORD` placeholders with `envsubst` and apply the result.
 Use your own credentials here:
 
 ```sh
-USER=zotero PASSWORD=password envsubst < manifest.yaml.template | kubectl apply -f -
+USER=zotero PASSWORD=password envsubst < manifests.yaml.template | kubectl apply -f -
 ```
 
 Check that everything came up:
@@ -62,7 +56,7 @@ kubectl get all -n zotero-webdav
 After rebuilding and re-importing the image (step 2), restart the deployment to roll out the new build:
 
 ```sh
-kubectl rollout restart deployment -n zotero-webdav -l app.kubernetes.io/component=webdav
+kubectl rollout restart deployment -n zotero-webdav -l app.kubernetes.io/name=zotero-webdav
 ```
 
 A restart leaves the previous ReplicaSet scaled to zero.
@@ -84,22 +78,21 @@ metadata:
   namespace: zotero-webdav
   labels:
     app.kubernetes.io/name: zotero-webdav
-    app.kubernetes.io/component: ingress
 spec:
   ingressClassName: traefik
   rules:
   - http:
       paths:
-      - path: /zotero-webdav/USER/zotero
+      - path: /zotero-webdav/${USER}/zotero
         pathType: Prefix
         backend:
           service:
-            name: zotero-webdav-USER-svc
+            name: zotero-webdav-${USER}-svc
             port:
               number: 8080
 ```
 
-> Replace `USER` with username.
+> Replace `${USER}` with username.
 
 Apply the Ingress:
 

@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zotero-webdav
+  namespace: zotero-webdav
+  labels:
+    app.kubernetes.io/name: zotero-webdav
+spec:
+  ingressClassName: traefik
+  rules:
+  - http:
+      paths:
+      - path: /zotero-webdav/${USER}/zotero
+        pathType: Prefix
+        backend:
+          service:
+            name: zotero-webdav-${USER}-svc
+            port:
+              number: 8080
