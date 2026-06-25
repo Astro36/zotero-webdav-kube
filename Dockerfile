@@ -1,11 +1,11 @@
-FROM alpine:3.21
+FROM alpine:3.24
 
 RUN apk add --no-cache rclone
 
 EXPOSE 8080
 
 ENTRYPOINT ["sh", "-c", \
-    "rclone serve webdav /data/zotero \
+    "rclone serve webdav /srv/zotero-webdav \
     --addr 0.0.0.0:8080 \
     --baseurl \"zotero-webdav/${WEBDAV_USER:-zotero}/zotero\" \
     --user \"${WEBDAV_USER:-zotero}\" \

@@ -40,7 +40,8 @@ spec:
     spec:
       containers:
       - name: zotero-webdav
-        image: zotero-webdav
+        image: docker.io/library/zotero-webdav:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         env:
@@ -50,9 +51,9 @@ spec:
           value: ${PASSWORD}
         volumeMounts:
         - name: zotero-webdav-storage
-          mountPath: /data/zotero
+          mountPath: /srv/zotero-webdav
       volumes:
       - name: zotero-webdav-storage
         hostPath:
-          path: /mnt/zotero-webdav/${USER}
+          path: /srv/zotero-webdav/${USER}
           type: DirectoryOrCreate
