@@ -8,6 +8,9 @@ kind: Secret
 metadata:
   name: zotero-webdav-${USER}-password
   namespace: zotero-webdav
+  labels:
+    app.kubernetes.io/name: zotero-webdav
+    app.kubernetes.io/instance: zotero-webdav-${USER}
 type: Opaque
 stringData:
   password: ${PASSWORD}
