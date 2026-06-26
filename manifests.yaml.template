@@ -61,6 +61,12 @@ spec:
             secretKeyRef:
               name: zotero-webdav-${USER}-password
               key: password
+        resources:
+          requests:
+            cpu: 2m
+            memory: 25Mi
+          limits:
+            memory: 100Mi
         volumeMounts:
         - name: zotero-webdav-storage
           mountPath: /srv/zotero-webdav
